@@ -7,9 +7,10 @@ const CONF_FILE: &str = "nest_backup_jornal.toml";
 pub struct Backup{
     pub name: String,
     pub source: std::path::PathBuf,
-    pub backup_file:std::path::PathBuf,
+    pub backup_dir:std::path::PathBuf,
     pub last_backup: String,
 }
+
 #[derive(Serialize, Deserialize, Default)]
 pub struct Config{
     #[serde(default)]
@@ -45,14 +46,16 @@ impl Config {
         let text = toml::to_string_pretty(self).context("cannot serialize config")?;
         std::fs::write(&self.conf_file, text).with_context(|| format!("cannot write {}", self.conf_file.display()))
     }
-    pub fn add(&mut self, name: &str, source: &std::path::Path, backup_file: &std::path::Path) -> anyhow::Result<()> {
+    pub fn add(&mut self, name: &str, source: &std::path::Path, backup_dir: &std::path::Path) -> anyhow::Result<()> {
         anyhow::ensure!(!self.backups.iter().any(|b| b.name == name), "backup {} already exists",name);
+        anyhow::ensure!(source.is_dir(), "source {} is not a folder", source.display());
+        anyhow::ensure!(backup_dir.is_dir(), "backup {} is not a folder", backup_dir.display());
         let source = std::path::absolute(source).with_context(|| format!("source {} is not found", source.display()))?;
-        let backup_file = std::path::absolute(backup_file).with_context(|| format!("backup file {} is not found", backup_file.display()))?;
+        let backup_dir = std::path::absolute(backup_dir).with_context(|| format!("backup dir {} is not found", backup_dir.display()))?;
         self.backups.push(Backup {
             name: name.to_string(),
             source,
-            backup_file,
+            backup_dir,
             last_backup: chrono::Local::now().to_rfc3339(),
         });
         self.save()

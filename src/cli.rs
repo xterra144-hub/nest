@@ -31,6 +31,8 @@ enum Command {
     Status,
     /// deploy backups from backup_dir to source
     Deploy(DeployArgs),
+    /// show where is backup folders 
+    Where,
 }
 
 #[derive(Args)]
@@ -75,6 +77,7 @@ pub fn run() -> anyhow::Result<()> {
         Command::Sync => run_sync(&cli.dir),
         Command::Status => run_status(&cli.dir),
         Command::Deploy(a) => run_deploy(&cli.dir, a.force),
+        Command::Where => run_where(),
     }
 }
 
@@ -193,4 +196,10 @@ fn run_deploy(dir: &std::path::Path, force: bool) -> anyhow::Result<()> {
     }
     Ok(())
 }
-
+fn run_where() -> anyhow::Result<()> {
+    let conf = crate::global::GlobalConfig::load()?;
+    for p in &conf.projects {
+        println!("{}", p.display());
+    }
+    Ok(())
+}

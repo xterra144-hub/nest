@@ -28,9 +28,18 @@ impl Config {
         }
         let path = dir.join("nest_backup_jornal.toml");
         match std::fs::OpenOptions::new().write(true).create_new(true).open(&path) {
-            Ok(_) => Ok(()),
+            Ok(_) => {
+                crate::global::GlobalConfig::register(dir)?;
+                Ok(())
+            },
             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-                anyhow::bail!("nest already initialized in {}", dir.display())
+                if crate::global::GlobalConfig::register(dir)? {
+                    println!("added {} to config", dir.display());
+                    Ok(())
+                }
+                else {
+                    anyhow::bail!("nest already initialized in {}", dir.display())
+                }
             }
             Err(e) => Err(e).with_context(|| format!("cannot to create {}",path.display()))
         }
